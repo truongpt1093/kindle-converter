@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindle Converter - Chuyển đổi sách điện tử miễn phí</title>
+    <meta name="description" content="Chuyển đổi PDF, Word, Excel sang định dạng Kindle (EPUB) - 100% miễn phí, xử lý trên trình duyệt">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📚 Kindle Converter</h1>
+            <p class="subtitle">Chuyển đổi PDF, Word, Excel sang định dạng Kindle (EPUB) - 100% miễn phí</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Upload Zone -->
+        <section id="upload-zone" class="section">
+            <div class="dropzone" id="dropzone">
+                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h2>Kéo thả file vào đây</h2>
+                <p class="or-text">hoặc</p>
+                <button id="select-file-btn" class="primary-btn">Chọn File</button>
+                <input type="file" id="file-input" accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.html" hidden>
+                <p class="supported-formats">
+                    Hỗ trợ: PDF, DOCX, XLSX, TXT, HTML (tối đa 50MB)
+                </p>
+            </div>
+        </section>
+
+        <!-- File List & Options -->
+        <section id="file-section" class="section" style="display:none;">
+            <div id="file-list" class="file-list"></div>
+
+            <div class="options-panel">
+                <h3>⚙️ Tùy chọn chuyển đổi</h3>
+
+                <div class="option-group">
+                    <label for="book-title">Tiêu đề sách:</label>
+                    <input type="text" id="book-title" placeholder="Nhập tiêu đề sách...">
+                </div>
+
+                <div class="option-group">
+                    <label for="book-author">Tác giả:</label>
+                    <input type="text" id="book-author" placeholder="Nhập tên tác giả...">
+                </div>
+
+                <div class="option-group">
+                    <label for="book-language">Ngôn ngữ:</label>
+                    <select id="book-language">
+                        <option value="vi">Tiếng Việt</option>
+                        <option value="en">English</option>
+                        <option value="zh">中文</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label for="cover-image">Ảnh bìa (tùy chọn):</label>
+                    <input type="file" id="cover-image" accept="image/*">
+                    <div id="cover-preview" class="cover-preview"></div>
+                </div>
+
+                <div class="option-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="auto-toc" checked>
+                        <span>Tự động tạo mục lục từ headings</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="convert-btn" class="primary-btn large">
+                🔄 Chuyển đổi sang EPUB
+            </button>
+        </section>
+
+        <!-- Progress -->
+        <section id="progress-section" class="section" style="display:none;">
+            <div class="progress-container">
+                <div class="spinner"></div>
+                <h3 id="progress-text">Đang xử lý...</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p id="progress-detail">Chuẩn bị...</p>
+            </div>
+        </section>
+
+        <!-- Download -->
+        <section id="download-section" class="section" style="display:none;">
+            <div class="success-message">
+                <svg class="success-icon" xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="8 12 11 15 16 10"></polyline>
+                </svg>
+                <h2>✅ Chuyển đổi thành công!</h2>
+                <p class="success-detail">File EPUB đã sẵn sàng để tải về</p>
+                <button id="download-btn" class="primary-btn large">
+                    📥 Tải về EPUB
+                </button>
+                <button id="convert-another-btn" class="secondary-btn">
+                    ↻ Chuyển đổi file khác
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p class="privacy-note">🔒 100% xử lý trên trình duyệt - File của bạn không được upload lên server</p>
+            <p class="footer-links">
+                Made with ❤️ |
+                <a href="https://github.com/truongpt1093/kindle-converter" target="_blank">GitHub</a> |
+                <a href="#about">About</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Load Libraries from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Load App -->
+    <script src="js/utils.js"></script>
+    <script src="js/converters/pdf-converter.js"></script>
+    <script src="js/converters/docx-converter.js"></script>
+    <script src="js/converters/excel-converter.js"></script>
+    <script src="js/converters/txt-converter.js"></script>
+    <script src="js/converters/epub-generator.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
