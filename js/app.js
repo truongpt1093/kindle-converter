@@ -47,7 +47,76 @@ function initializeApp() {
     // Cover image preview
     coverImageInput.addEventListener('change', handleCoverImageChange);
 
+    // Output format change
+    const outputFormatSelect = document.getElementById('output-format');
+    outputFormatSelect.addEventListener('change', handleOutputFormatChange);
+
     console.log('✅ Event listeners attached');
+}
+
+/**
+ * Handle output format change
+ */
+function handleOutputFormatChange() {
+    const outputFormat = document.getElementById('output-format').value;
+    const btnText = document.getElementById('convert-btn-text');
+
+    const formatNames = {
+        'epub': 'EPUB',
+        'html': 'HTML',
+        'txt': 'TXT',
+        'docx': 'DOCX'
+    };
+
+    btnText.textContent = `Chuyển đổi sang ${formatNames[outputFormat] || 'EPUB'}`;
+
+    // Validate if file is selected
+    if (currentFile) {
+        validateFormatCompatibility();
+    }
+}
+
+/**
+ * Validate input and output format compatibility
+ */
+function validateFormatCompatibility() {
+    const inputExt = currentFile.name.split('.').pop().toLowerCase();
+    const outputFormat = document.getElementById('output-format').value;
+
+    // Map extensions to format names
+    const inputFormat = inputExt === 'htm' ? 'html' : inputExt;
+
+    const warningDiv = document.getElementById('format-warning');
+    if (warningDiv) warningDiv.remove();
+
+    if (inputFormat === outputFormat) {
+        // Show warning
+        const optionsPanel = document.querySelector('.options-panel');
+        const warning = document.createElement('div');
+        warning.id = 'format-warning';
+        warning.className = 'format-warning';
+        warning.style.cssText = 'background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #ef4444;';
+        warning.innerHTML = `
+            <strong>⚠️ Cảnh báo:</strong> Định dạng đầu vào (<strong>${inputFormat.toUpperCase()}</strong>)
+            và đầu ra (<strong>${outputFormat.toUpperCase()}</strong>) giống nhau!<br>
+            <small>Vui lòng chọn định dạng đầu ra khác.</small>
+        `;
+        optionsPanel.insertBefore(warning, optionsPanel.firstChild);
+
+        // Disable convert button
+        document.getElementById('convert-btn').disabled = true;
+        document.getElementById('convert-btn').style.opacity = '0.5';
+        document.getElementById('convert-btn').style.cursor = 'not-allowed';
+
+        return false;
+    } else {
+        // Enable convert button
+        document.getElementById('convert-btn').disabled = false;
+        document.getElementById('convert-btn').style.opacity = '1';
+        document.getElementById('convert-btn').style.cursor = 'pointer';
+
+        return true;
+    }
 }
 
 /**
@@ -91,11 +160,11 @@ function handleFiles(files) {
     currentFile = files[0];
 
     // Validate file type
-    const validExtensions = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'txt', 'html', 'htm'];
+    const validExtensions = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'txt', 'html', 'htm', 'epub'];
     const fileExtension = currentFile.name.split('.').pop().toLowerCase();
 
     if (!validExtensions.includes(fileExtension)) {
-        alert('❌ File không được hỗ trợ.\n\nVui lòng chọn: PDF, DOCX, XLSX, TXT hoặc HTML');
+        alert('❌ File không được hỗ trợ.\n\nVui lòng chọn: PDF, DOCX, XLSX, TXT, HTML hoặc EPUB');
         return;
     }
 
@@ -118,6 +187,9 @@ function handleFiles(files) {
     // Auto-fill metadata from filename
     const nameWithoutExt = currentFile.name.replace(/\.[^/.]+$/, '');
     document.getElementById('book-title').value = nameWithoutExt;
+
+    // Validate format compatibility
+    validateFormatCompatibility();
 }
 
 /**
@@ -136,6 +208,7 @@ function displayFileInfo(file) {
     else if (ext === 'xlsx' || ext === 'xls') icon = '📊';
     else if (ext === 'txt') icon = '📝';
     else if (ext === 'html' || ext === 'htm') icon = '🌐';
+    else if (ext === 'epub') icon = '📚';
 
     fileList.innerHTML = `
         <div class="file-item">
@@ -170,6 +243,12 @@ function handleCoverImageChange(e) {
 async function startConversion() {
     if (!currentFile) {
         alert('⚠️ Vui lòng chọn file trước!');
+        return;
+    }
+
+    // Validate format compatibility
+    if (!validateFormatCompatibility()) {
+        alert('❌ Định dạng đầu vào và đầu ra không được giống nhau!\n\nVui lòng chọn định dạng đầu ra khác.');
         return;
     }
 
@@ -217,6 +296,10 @@ async function startConversion() {
             case 'htm':
                 converter = new TXTConverter();
                 break;
+            case 'epub':
+                converter = new EPUBReader();
+                converter.convert = converter.parse; // EPUBReader uses parse() instead of convert()
+                break;
             default:
                 throw new Error('Định dạng file không được hỗ trợ: ' + fileExt);
         }
@@ -226,18 +309,41 @@ async function startConversion() {
         convertedData = await converter.convert(currentFile, updateProgress);
         console.log('✅ Conversion complete:', convertedData);
 
-        // Step 2: Generate EPUB
-        updateProgress(0, 'Đang tạo file EPUB...');
-        console.log('📦 Generating EPUB...');
+        // Step 2: Generate output file
+        const outputFormat = document.getElementById('output-format').value;
+        const formatNames = { epub: 'EPUB', html: 'HTML', txt: 'TXT', docx: 'DOCX' };
+        const extensions = { epub: '.epub', html: '.html', txt: '.txt', docx: '.docx' };
 
-        const generator = new EPUBGenerator();
-        const epubBlob = await generator.generate(convertedData, metadata, updateProgress);
+        updateProgress(0, `Đang tạo file ${formatNames[outputFormat]}...`);
+        console.log(`📦 Generating ${formatNames[outputFormat]}...`);
 
-        console.log('✅ EPUB generated:', Utils.formatFileSize(epubBlob.size));
+        // Select appropriate generator
+        let generator;
+        switch (outputFormat) {
+            case 'epub':
+                generator = new EPUBGenerator();
+                break;
+            case 'html':
+                generator = new HTMLGenerator();
+                break;
+            case 'txt':
+                generator = new TXTGenerator();
+                break;
+            case 'docx':
+                generator = new DOCXGenerator();
+                break;
+            default:
+                throw new Error('Định dạng đầu ra không được hỗ trợ: ' + outputFormat);
+        }
+
+        const outputBlob = await generator.generate(convertedData, metadata, updateProgress);
+
+        console.log(`✅ ${formatNames[outputFormat]} generated:`, Utils.formatFileSize(outputBlob.size));
 
         // Save for download
-        window.epubBlob = epubBlob;
-        window.epubFilename = Utils.sanitizeFilename(metadata.title) + '.epub';
+        window.outputBlob = outputBlob;
+        window.outputFilename = Utils.sanitizeFilename(metadata.title) + extensions[outputFormat];
+        window.outputFormat = outputFormat;
 
         // Show success section
         document.getElementById('progress-section').style.display = 'none';
@@ -292,22 +398,25 @@ async function getCoverImage() {
 }
 
 /**
- * Download EPUB file
+ * Download output file
  */
 function downloadEPUB() {
-    if (!window.epubBlob) {
-        alert('⚠️ Không tìm thấy file EPUB. Vui lòng thử lại.');
+    if (!window.outputBlob) {
+        alert('⚠️ Không tìm thấy file. Vui lòng thử lại.');
         return;
     }
 
-    console.log('📥 Downloading EPUB:', window.epubFilename);
+    const formatNames = { epub: 'EPUB', html: 'HTML', txt: 'TXT', docx: 'DOCX' };
+    const formatName = formatNames[window.outputFormat] || 'file';
+
+    console.log(`📥 Downloading ${formatName}:`, window.outputFilename);
 
     try {
         // Create download link
-        const url = URL.createObjectURL(window.epubBlob);
+        const url = URL.createObjectURL(window.outputBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = window.epubFilename;
+        a.download = window.outputFilename;
         a.style.display = 'none';
 
         document.body.appendChild(a);
@@ -336,8 +445,9 @@ function reset() {
     // Clear state
     currentFile = null;
     convertedData = null;
-    window.epubBlob = null;
-    window.epubFilename = null;
+    window.outputBlob = null;
+    window.outputFilename = null;
+    window.outputFormat = null;
 
     // Clear form inputs
     document.getElementById('file-input').value = '';
@@ -345,6 +455,11 @@ function reset() {
     document.getElementById('book-author').value = '';
     document.getElementById('cover-image').value = '';
     document.getElementById('cover-preview').innerHTML = '';
+    document.getElementById('output-format').value = 'epub';
+
+    // Remove format warning if exists
+    const warningDiv = document.getElementById('format-warning');
+    if (warningDiv) warningDiv.remove();
 
     // Reset UI
     document.getElementById('upload-zone').style.display = 'block';

@@ -27,9 +27,9 @@
                 <h2>Kéo thả file vào đây</h2>
                 <p class="or-text">hoặc</p>
                 <button id="select-file-btn" class="primary-btn">Chọn File</button>
-                <input type="file" id="file-input" accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.html" hidden>
+                <input type="file" id="file-input" accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.html,.epub" hidden>
                 <p class="supported-formats">
-                    Hỗ trợ: PDF, DOCX, XLSX, TXT, HTML (tối đa 50MB)
+                    Hỗ trợ: PDF, DOCX, XLSX, TXT, HTML, EPUB (tối đa 50MB)
                 </p>
             </div>
         </section>
@@ -40,6 +40,19 @@
 
             <div class="options-panel">
                 <h3>⚙️ Tùy chọn chuyển đổi</h3>
+
+                <div class="option-group">
+                    <label for="output-format">📤 Định dạng đầu ra:</label>
+                    <select id="output-format">
+                        <option value="epub">EPUB (E-book cho Kindle/Kobo)</option>
+                        <option value="html">HTML (Trang web)</option>
+                        <option value="txt">TXT (Plain text)</option>
+                        <option value="docx">DOCX (Microsoft Word)</option>
+                    </select>
+                    <p class="format-note" style="font-size: 0.85rem; color: #6b7280; margin-top: 4px;">
+                        💡 Định dạng đầu ra phải khác định dạng đầu vào
+                    </p>
+                </div>
 
                 <div class="option-group">
                     <label for="book-title">Tiêu đề sách:</label>
@@ -77,7 +90,7 @@
             </div>
 
             <button id="convert-btn" class="primary-btn large">
-                🔄 Chuyển đổi sang EPUB
+                🔄 <span id="convert-btn-text">Chuyển đổi sang EPUB</span>
             </button>
         </section>
 
@@ -135,7 +148,9 @@
     <script src="js/converters/docx-converter.js"></script>
     <script src="js/converters/excel-converter.js"></script>
     <script src="js/converters/txt-converter.js"></script>
+    <script src="js/converters/epub-reader.js"></script>
     <script src="js/converters/epub-generator.js"></script>
+    <script src="js/converters/output-generators.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
