@@ -1,12 +1,16 @@
 # 📚 Kindle Converter
 
-Chuyển đổi tài liệu **PDF, Word, Excel, TXT** sang định dạng **EPUB** cho Kindle - **Miễn phí 100%**
+Chuyển đổi tài liệu **đa định dạng** - **Miễn phí 100%**
+
+Hỗ trợ: **PDF, Word, Excel, TXT, HTML, EPUB** → **EPUB, HTML, TXT, DOCX**
 
 🌐 **Demo**: [https://truongpt1093.github.io/kindle-converter/](https://truongpt1093.github.io/kindle-converter/)
 
 ## ✨ Tính năng
 
-- ✅ **Hỗ trợ nhiều định dạng**: PDF, DOCX, XLSX, TXT, HTML
+- ✅ **Hỗ trợ nhiều định dạng đầu vào**: PDF, DOCX, XLSX, TXT, HTML, EPUB
+- 🎯 **Nhiều định dạng đầu ra**: EPUB, HTML, TXT, DOCX
+- ⚡ **Validation thông minh** - Cảnh báo nếu input = output format
 - 🔒 **100% xử lý trên trình duyệt** - File của bạn không được upload lên server
 - 🚀 **Nhanh chóng và dễ sử dụng** - Drag & drop hoặc chọn file
 - 📱 **Responsive** - Hoạt động tốt trên mọi thiết bị
@@ -21,21 +25,27 @@ Chuyển đổi tài liệu **PDF, Word, Excel, TXT** sang định dạng **EPUB
 - Kéo thả file vào vùng drop zone
 - Hoặc click "Chọn File" để browse
 
-### Bước 2: Nhập thông tin (tùy chọn)
+### Bước 2: Chọn định dạng đầu ra
+- Chọn định dạng muốn chuyển đổi: EPUB, HTML, TXT, hoặc DOCX
+- App sẽ tự động cảnh báo nếu input = output format
+
+### Bước 3: Nhập thông tin (tùy chọn)
 - Tiêu đề sách
 - Tác giả
 - Ngôn ngữ
 - Ảnh bìa (JPG, PNG)
 
-### Bước 3: Chuyển đổi
-- Click "Chuyển đổi sang EPUB"
+### Bước 4: Chuyển đổi
+- Click "Chuyển đổi sang [Format]"
 - Chờ quá trình xử lý (vài giây đến vài phút tùy file)
 
-### Bước 4: Tải về
-- Click "Tải về EPUB"
-- Transfer file EPUB sang Kindle qua USB hoặc email
+### Bước 5: Tải về
+- Click "Tải về [Format]"
+- Sử dụng file đã convert theo nhu cầu
 
 ## 📋 Định dạng hỗ trợ
+
+### 📥 Input Formats (Đầu vào)
 
 | Format | Extension | Ghi chú |
 |--------|-----------|---------|
@@ -44,8 +54,23 @@ Chuyển đổi tài liệu **PDF, Word, Excel, TXT** sang định dạng **EPUB
 | Excel | `.xlsx`, `.xls` | Mỗi sheet = 1 chapter |
 | Text | `.txt` | Plain text |
 | HTML | `.html`, `.htm` | Web pages |
+| EPUB | `.epub` | Đọc và parse EPUB files |
 
-**Giới hạn**: File tối đa 50MB
+### 📤 Output Formats (Đầu ra)
+
+| Format | Extension | Ghi chú |
+|--------|-----------|---------|
+| EPUB | `.epub` | E-book format cho Kindle, Kobo, Apple Books |
+| HTML | `.html` | Standalone HTML document với styling |
+| TXT | `.txt` | Plain text file |
+| DOCX | `.docx` | Microsoft Word document (basic) |
+
+### ⚠️ Lưu ý
+
+- **Format validation**: Input format phải khác output format
+- **Giới hạn**: File tối đa 50MB
+- **EPUB → EPUB**: Không được phép (vô nghĩa)
+- **PDF → PDF**: Không được phép
 
 ## 🛠️ Công nghệ
 
