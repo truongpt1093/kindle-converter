@@ -252,7 +252,262 @@ class DOCXGenerator {
     }
 }
 
+/**
+ * AZW3 Generator (Amazon Kindle Format)
+ * Note: AZW3 is Amazon's proprietary format based on EPUB/KF8
+ * For best compatibility, use Calibre to convert EPUB → AZW3
+ */
+class AZW3Generator {
+    async generate(convertedData, metadata, progressCallback) {
+        progressCallback(5, 'Chuẩn bị tạo AZW3...');
+
+        // AZW3 is based on EPUB/KF8 format
+        // We'll create an EPUB-compatible structure with AZW3 extensions
+        const zip = new JSZip();
+
+        // 1. Add mimetype for AZW3
+        zip.file('mimetype', 'application/vnd.amazon.mobi8-ebook', { compression: 'STORE' });
+
+        progressCallback(10, 'Tạo cấu trúc AZW3...');
+
+        // 2. META-INF/container.xml
+        const containerXML = `<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`;
+        zip.folder('META-INF').file('container.xml', containerXML);
+
+        progressCallback(20, 'Tạo metadata...');
+
+        // 3. OEBPS/content.opf (Package Document with Kindle extensions)
+        const contentOPF = this.generateContentOPF(metadata, convertedData.chapters);
+        zip.folder('OEBPS').file('content.opf', contentOPF);
+
+        progressCallback(30, 'Tạo mục lục...');
+
+        // 4. OEBPS/toc.ncx
+        const tocNCX = this.generateTocNCX(metadata, convertedData.chapters);
+        zip.folder('OEBPS').file('toc.ncx', tocNCX);
+
+        progressCallback(40, 'Tạo stylesheet...');
+
+        // 5. OEBPS/stylesheet.css (Kindle-optimized)
+        const css = this.generateKindleCSS();
+        zip.folder('OEBPS').file('stylesheet.css', css);
+
+        progressCallback(50, 'Xử lý nội dung...');
+
+        // 6. OEBPS/content.xhtml
+        const contentHTML = this.generateContentHTML(convertedData);
+        zip.folder('OEBPS').file('content.xhtml', contentHTML);
+
+        // 7. Cover image
+        if (metadata.coverImage) {
+            progressCallback(60, 'Thêm ảnh bìa...');
+            zip.folder('OEBPS').file('cover.jpg', metadata.coverImage);
+        }
+
+        progressCallback(80, 'Đang nén file AZW3...');
+
+        // Generate AZW3 (modified EPUB structure)
+        const blob = await zip.generateAsync({
+            type: 'blob',
+            mimeType: 'application/vnd.amazon.mobi8-ebook',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 9 }
+        }, (metadata) => {
+            const percent = 80 + (metadata.percent * 0.2);
+            progressCallback(percent, `Đang nén... ${Math.round(metadata.percent)}%`);
+        });
+
+        progressCallback(100, 'Hoàn tất!');
+
+        return blob;
+    }
+
+    generateContentOPF(metadata, chapters) {
+        const uuid = this.generateUUID();
+        const date = new Date().toISOString().split('T')[0];
+        const title = metadata.title || 'Untitled';
+        const author = metadata.author || 'Unknown';
+        const language = metadata.language || 'vi';
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookID">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+    <dc:title>${Utils.escapeXML(title)}</dc:title>
+    <dc:creator opf:role="aut">${Utils.escapeXML(author)}</dc:creator>
+    <dc:language>${language}</dc:language>
+    <dc:identifier id="BookID">urn:uuid:${uuid}</dc:identifier>
+    <dc:date>${date}</dc:date>
+    <dc:publisher>Kindle Converter</dc:publisher>
+    ${metadata.coverImage ? '<meta name="cover" content="cover-image"/>' : ''}
+    <meta name="generator" content="Kindle Converter"/>
+  </metadata>
+
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="stylesheet" href="stylesheet.css" media-type="text/css"/>
+    <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
+    ${metadata.coverImage ? '<item id="cover-image" href="cover.jpg" media-type="image/jpeg"/>' : ''}
+  </manifest>
+
+  <spine toc="ncx">
+    <itemref idref="content"/>
+  </spine>
+
+  <guide>
+    <reference type="text" title="Start" href="content.xhtml"/>
+    ${metadata.coverImage ? '<reference type="cover" title="Cover" href="cover.jpg"/>' : ''}
+  </guide>
+</package>`;
+    }
+
+    generateTocNCX(metadata, chapters) {
+        const uuid = this.generateUUID();
+        const title = metadata.title || 'Untitled';
+
+        let navPoints = '';
+        if (chapters && chapters.length > 0) {
+            const tocChapters = chapters.slice(0, 50);
+            tocChapters.forEach((chapter, index) => {
+                const chapterTitle = Utils.escapeXML(chapter.title || `Chapter ${index + 1}`);
+                navPoints += `
+    <navPoint id="navpoint-${index + 1}" playOrder="${index + 1}">
+      <navLabel>
+        <text>${chapterTitle}</text>
+      </navLabel>
+      <content src="content.xhtml#chapter-${index + 1}"/>
+    </navPoint>`;
+            });
+        } else {
+            navPoints = `
+    <navPoint id="navpoint-1" playOrder="1">
+      <navLabel>
+        <text>Start</text>
+      </navLabel>
+      <content src="content.xhtml"/>
+    </navPoint>`;
+        }
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="urn:uuid:${uuid}"/>
+    <meta name="dtb:depth" content="1"/>
+    <meta name="dtb:totalPageCount" content="0"/>
+    <meta name="dtb:maxPageNumber" content="0"/>
+  </head>
+  <docTitle>
+    <text>${Utils.escapeXML(title)}</text>
+  </docTitle>
+  <navMap>${navPoints}
+  </navMap>
+</ncx>`;
+    }
+
+    generateKindleCSS() {
+        return `/* Kindle-optimized CSS */
+body {
+    font-family: serif;
+    line-height: 1.5;
+    margin: 0;
+    padding: 1em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: sans-serif;
+    font-weight: bold;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+    page-break-after: avoid;
+}
+
+h1 { font-size: 1.8em; }
+h2 { font-size: 1.5em; }
+h3 { font-size: 1.2em; }
+
+p {
+    margin: 0.5em 0;
+    text-align: justify;
+    text-indent: 1em;
+    orphans: 2;
+    widows: 2;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+th, td {
+    border: 1px solid #666;
+    padding: 0.5em;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.page-break {
+    page-break-after: always;
+}`;
+    }
+
+    generateContentHTML(convertedData) {
+        let content = convertedData.html || convertedData.content || '';
+
+        if (!content.includes('<')) {
+            content = `<p>${Utils.escapeHTML(content)}</p>`;
+        }
+
+        if (convertedData.chapters && convertedData.chapters.length > 0) {
+            convertedData.chapters.forEach((chapter, index) => {
+                const anchor = `<a id="chapter-${index + 1}"></a>`;
+                const chapterTitle = Utils.escapeHTML(chapter.title);
+                const titleVariants = [
+                    `<h1>${chapterTitle}</h1>`,
+                    `<h2>${chapterTitle}</h2>`,
+                    `<h3>${chapterTitle}</h3>`
+                ];
+                for (const variant of titleVariants) {
+                    if (content.includes(variant)) {
+                        content = content.replace(variant, anchor + variant);
+                        break;
+                    }
+                }
+            });
+        }
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="vi">
+<head>
+    <title>Content</title>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+    }
+
+    generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+}
+
 // Make generators globally available
 window.HTMLGenerator = HTMLGenerator;
 window.TXTGenerator = TXTGenerator;
 window.DOCXGenerator = DOCXGenerator;
+window.AZW3Generator = AZW3Generator;

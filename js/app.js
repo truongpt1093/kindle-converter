@@ -63,6 +63,7 @@ function handleOutputFormatChange() {
 
     const formatNames = {
         'epub': 'EPUB',
+        'azw3': 'AZW3',
         'html': 'HTML',
         'txt': 'TXT',
         'docx': 'DOCX'
@@ -311,8 +312,8 @@ async function startConversion() {
 
         // Step 2: Generate output file
         const outputFormat = document.getElementById('output-format').value;
-        const formatNames = { epub: 'EPUB', html: 'HTML', txt: 'TXT', docx: 'DOCX' };
-        const extensions = { epub: '.epub', html: '.html', txt: '.txt', docx: '.docx' };
+        const formatNames = { epub: 'EPUB', azw3: 'AZW3', html: 'HTML', txt: 'TXT', docx: 'DOCX' };
+        const extensions = { epub: '.epub', azw3: '.azw3', html: '.html', txt: '.txt', docx: '.docx' };
 
         updateProgress(0, `Đang tạo file ${formatNames[outputFormat]}...`);
         console.log(`📦 Generating ${formatNames[outputFormat]}...`);
@@ -322,6 +323,9 @@ async function startConversion() {
         switch (outputFormat) {
             case 'epub':
                 generator = new EPUBGenerator();
+                break;
+            case 'azw3':
+                generator = new AZW3Generator();
                 break;
             case 'html':
                 generator = new HTMLGenerator();
@@ -406,7 +410,7 @@ function downloadEPUB() {
         return;
     }
 
-    const formatNames = { epub: 'EPUB', html: 'HTML', txt: 'TXT', docx: 'DOCX' };
+    const formatNames = { epub: 'EPUB', azw3: 'AZW3', html: 'HTML', txt: 'TXT', docx: 'DOCX' };
     const formatName = formatNames[window.outputFormat] || 'file';
 
     console.log(`📥 Downloading ${formatName}:`, window.outputFilename);
