@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST - Kindle Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+        }
+        .test-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { color: #667eea; }
+        .status { padding: 10px; border-radius: 6px; margin: 10px 0; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .warning { background: #fef3c7; color: #92400e; }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover { transform: translateY(-2px); }
+        #testResults { margin-top: 20px; }
+        .test-item { padding: 8px; border-left: 4px solid #ddd; margin: 8px 0; }
+        .test-item.pass { border-color: #10b981; background: #f0fdf4; }
+        .test-item.fail { border-color: #ef4444; background: #fef2f2; }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h1>🧪 Kindle Converter - Local Test</h1>
+        <p>Test xem app có hoạt động không trước khi deploy lên GitHub Pages</p>
+
+        <div class="status warning">
+            ⚠️ <strong>Lưu ý:</strong> File này phải được mở qua web server (không phải file:///)
+        </div>
+
+        <h2>📋 Checklist:</h2>
+        <div id="testResults">
+            <div class="test-item" id="test-libraries">
+                ⏳ Đang kiểm tra libraries...
+            </div>
+            <div class="test-item" id="test-files">
+                ⏳ Đang kiểm tra files...
+            </div>
+            <div class="test-item" id="test-converters">
+                ⏳ Đang kiểm tra converters...
+            </div>
+        </div>
+
+        <h2>🔗 Links:</h2>
+        <button onclick="window.open('index.html', '_blank')">📱 Mở App</button>
+        <button onclick="window.open('https://truongpt1093.github.io/kindle-converter/', '_blank')">🌐 GitHub Pages</button>
+        <button onclick="runTests()">🔄 Run Tests</button>
+
+        <h2>📝 Hướng dẫn mở local:</h2>
+        <pre style="background: #f3f4f6; padding: 15px; border-radius: 6px; overflow-x: auto;">
+# Cách 1: Python
+cd /path/to/kindle-converter
+python -m http.server 8000
+# Mở: http://localhost:8000
+
+# Cách 2: Node.js
+npx serve
+# Mở URL hiển thị
+
+# Cách 3: VS Code
+# Install "Live Server" extension
+# Right-click index.html > Open with Live Server
+        </pre>
+    </div>
+
+    <script>
+        function checkLibrary(name, globalVar) {
+            return typeof window[globalVar] !== 'undefined';
+        }
+
+        function runTests() {
+            // Test 1: Check libraries
+            const libTest = document.getElementById('test-libraries');
+            const libs = [
+                { name: 'Mammoth.js', var: 'mammoth' },
+                { name: 'PDF.js', var: 'pdfjsLib' },
+                { name: 'SheetJS', var: 'XLSX' },
+                { name: 'JSZip', var: 'JSZip' }
+            ];
+
+            let allLibsLoaded = true;
+            let libStatus = '';
+
+            libs.forEach(lib => {
+                const loaded = checkLibrary(lib.name, lib.var);
+                if (!loaded) allLibsLoaded = false;
+                libStatus += `${loaded ? '✅' : '❌'} ${lib.name} `;
+            });
+
+            libTest.className = 'test-item ' + (allLibsLoaded ? 'pass' : 'fail');
+            libTest.innerHTML = libStatus;
+
+            // Test 2: Check files
+            const fileTest = document.getElementById('test-files');
+            fetch('index.html')
+                .then(r => {
+                    fileTest.className = 'test-item pass';
+                    fileTest.innerHTML = '✅ index.html loaded';
+                })
+                .catch(e => {
+                    fileTest.className = 'test-item fail';
+                    fileTest.innerHTML = '❌ Cannot load files (Need web server!)';
+                });
+
+            // Test 3: Check converters
+            const convTest = document.getElementById('test-converters');
+            setTimeout(() => {
+                const converters = [
+                    'PDFConverter',
+                    'DOCXConverter',
+                    'ExcelConverter',
+                    'TXTConverter',
+                    'EPUBGenerator',
+                    'Utils'
+                ];
+
+                let allConvertersLoaded = converters.every(c => typeof window[c] !== 'undefined');
+
+                convTest.className = 'test-item ' + (allConvertersLoaded ? 'pass' : 'fail');
+                convTest.innerHTML = allConvertersLoaded
+                    ? '✅ All converters loaded'
+                    : '❌ Some converters missing (Run from web server!)';
+            }, 1000);
+        }
+
+        // Auto run tests after 2 seconds
+        setTimeout(runTests, 2000);
+    </script>
+
+    <!-- Load libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Load app -->
+    <script src="js/utils.js"></script>
+    <script src="js/converters/pdf-converter.js"></script>
+    <script src="js/converters/docx-converter.js"></script>
+    <script src="js/converters/excel-converter.js"></script>
+    <script src="js/converters/txt-converter.js"></script>
+    <script src="js/converters/epub-generator.js"></script>
+</body>
+</html>
